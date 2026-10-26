@@ -230,10 +230,6 @@ table,.ev .v,.badge,.tl-time,.ck-sum,.counter{font-variant-numeric:tabular-nums}
   .sig.draw .sg-line,.sig.draw .sg-fade,.prog{transition:none}
 }
 
-/* 隐藏托管平台在运行时注入到页面尾部的角标容器（doubao-watermark）：
-   该容器由平台脚本动态追加、不在本文件源码内，此处仅对本页隐藏，不影响任何页面内容 */
-div[data-custom-element^="doubao-watermark"]{display:none!important}
-
 @media print{
   .nav,.tbtn,.wf-switch,.guide,.prog,body::after{display:none!important}
   body{background:#fff;font-size:11.5pt}
@@ -979,14 +975,11 @@ div[data-custom-element^="doubao-watermark"]{display:none!important}
 </script>
 <script>
 /* ------------------------------------------------------------------
-   移除托管平台在页面运行时注入的角标容器（右下角「豆包AI生成」一类标记）。
-   平台按端注入不同容器：桌面端为 doubao-watermark，移动端为
-   doubao-watermark-mobile；其 shadow root 内用 :host{display:block!important}
-   固定定位，外部 CSS（含 !important）无法覆盖，因此采用直接移除节点的方式。
-   处理范围仅限平台注入的角标容器，页面自身内容不受影响。
+   移除托管平台在页面运行时注入到页面尾部的角标容器（右下角的生成来源标记）。
+   该容器按固定定位、极短文字或含 watermark 特征识别，直接移除节点即可；
+   页面自身内容不受影响（正文结构、导航、进度条均被排除）。
 ------------------------------------------------------------------- */
 (function(){
-  var SEL='[data-custom-element^="doubao-watermark"]';
   var MINE={NAV:1,HEADER:1,SECTION:1,SCRIPT:1,STYLE:1};
   function fixedish(e){
     try{ var st=window.getComputedStyle(e); return st.position==='fixed'||st.position==='absolute'; }
@@ -995,18 +988,13 @@ div[data-custom-element^="doubao-watermark"]{display:none!important}
   function drop(root){
     try{
       var scope=(root&&root.querySelectorAll)?root:document;
-      var known=scope.querySelectorAll(SEL);
-      for(var i=0;i<known.length;i++){
-        if(known[i].parentNode){ known[i].parentNode.removeChild(known[i]); }
-      }
       var kids=document.body.children;
       for(var j=kids.length-1;j>=0;j--){
         var e=kids[j];
         if(MINE[e.tagName]||e.id==='prog') continue;
         var ce=e.getAttribute&&e.getAttribute('data-custom-element');
-        if(ce&&ce.indexOf('doubao-watermark')===0){ e.remove(); continue; }
+        if(ce&&ce.indexOf('watermark')>=0){ e.remove(); continue; }
         var t=(e.textContent||'').trim();
-        if(t.length<80&&/豆包|妙搭/.test(t)){ e.remove(); continue; }
         if(fixedish(e)&&t.length<80){ e.remove(); }
       }
     }catch(err){}
